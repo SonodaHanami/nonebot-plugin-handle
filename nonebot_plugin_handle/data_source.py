@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from datetime import datetime
 from enum import Enum
 from io import BytesIO
 from typing import List, Optional, Tuple
@@ -7,6 +8,7 @@ from PIL import Image, ImageDraw
 from PIL.Image import Image as IMG
 
 from .config import handle_config
+from .utils import game_mode
 from .utils import get_pinyin, legal_idiom, load_font, save_jpg
 
 
@@ -43,16 +45,30 @@ ENHANCED_COLOR = ColorGroup(
 
 
 class Handle:
-    def __init__(self, idiom: str, explanation: str, strict: bool = False):
+    def __init__(self,
+            mode: str, idiom: str, explanation: str,
+            category: List = [], selected_category: List = [],
+            strict: bool = False, confirm: bool = False
+        ):
+        self.mode = mode
+        self.name = game_mode[mode]['name']
         self.idiom: str = idiom  # 成语
         self.explanation: str = explanation  # 释义
+        self.category = category
+        self.selected_category = selected_category
+        self.word_to_pinyin = game_mode[mode]['word_to_pinyin']
         self.strict: bool = strict  # 是否判断输入词语为成语
-        self.result = f"【成语】：{idiom}\n【释义】：{explanation}"
-        self.pinyin: List[Tuple[str, str, str]] = get_pinyin(idiom)  # 拼音
+        self.confirm: bool = confirm # 是否提示输入不为成语
+        self.result = '【{}】\n{}'.format(idiom, explanation.replace('；', '\n'))
+        self.pinyin: List[Tuple[str, str, str]] = get_pinyin(idiom, default_pinyin=self.word_to_pinyin.get(idiom))  # 拼音
         self.length = 4
         self.times: int = 10  # 可猜次数
         self.guessed_idiom: List[str] = []  # 记录已猜成语
         self.guessed_pinyin: List[List[Tuple[str, str, str]]] = []  # 记录已猜成语的拼音
+        self.start = datetime.now() # 开始时间
+        self.hint_enabled = True # 是否允许使用提示
+        self.last_hint = 0 # 是否已使用提示
+        self.solo = None # 是否单人挑战
 
         self.block_size = (160, 160)  # 文字块尺寸
         self.block_padding = (20, 20)  # 文字块之间间距
@@ -69,12 +85,12 @@ class Handle:
         )
 
     def guess(self, idiom: str) -> Optional[GuessResult]:
-        if self.strict and not legal_idiom(idiom):
+        if self.strict and not legal_idiom(idiom, self.mode):
             return GuessResult.ILLEGAL
         if idiom in self.guessed_idiom:
             return GuessResult.DUPLICATE
         self.guessed_idiom.append(idiom)
-        self.guessed_pinyin.append(get_pinyin(idiom))
+        self.guessed_pinyin.append(get_pinyin(idiom, default_pinyin=self.word_to_pinyin.get(idiom)))
         if idiom == self.idiom:
             return GuessResult.WIN
         if len(self.guessed_idiom) == self.times:
@@ -241,6 +257,7 @@ class Handle:
         return save_jpg(board)
 
     def draw_hint(self) -> BytesIO:
+        self.hinted = True
         guessed_char = set("".join(self.guessed_idiom))
         guessed_initial = set()
         guessed_final = set()
