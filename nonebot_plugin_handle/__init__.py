@@ -31,7 +31,7 @@ from nonebot_plugin_session import SessionId, SessionIdType
 from .config import Config, handle_config
 from .data_source import GuessResult, Handle
 from .utils import game_mode
-from .utils import random_idiom, init_answers
+from .utils import random_idiom, init_answers, query_word
 
 logger = logger_wrapper('Handle')
 
@@ -138,7 +138,7 @@ handle_idiom = on_regex(
     priority=14,
 )
 handle_query_word = on_regex(
-    r'^查询?P<name>(.{2})?P<word>(.*)',
+    r'^查询(?P<name>.{2})(?P<word>.*)',
     rule=is_group_msg,
     block=True,
     priority=14,
@@ -287,14 +287,12 @@ async def _(matcher: Matcher, user_id: UserId, matched: Dict[str, Any] = RegexDi
 async def handle_query_word(matcher: Matcher, user_id: UserId, matched: Dict[str, Any] = RegexDict()):
     name = str(matched["name"]).strip()
     word = str(matched["word"]).strip()
-    for mode in game_mode:
-        if name == game_mode[mode]['name']:
-            word_found = False
-            for ans in game_mode[mode]['answers']:
-                if word == ans['word']:
-                    reply = '【{}】\n拼音：{}\n所属范围：{}\n释义：{}'.format(word, ' '.join(ans['pinyin']), '、'.join(ans['category']), ans['explanation'].replace('；', '\n'))
-                    # logger('INFO', reply)
-                    await query_word.finish(reply)
-            else:
+
+    reply = query_word(name, word)
+    if reply:
+        await matcher.finish(reply)
+    else:
+        for mode in game_mode:
+            if name == game_mode[mode]['name']:
                 reply = '你确定这是个四字{}吗？'.format(game_mode[mode]['name'])
-                await query_word.finish(reply, reply_message=True)
+                await matcher.finish(reply, reply_message=True)

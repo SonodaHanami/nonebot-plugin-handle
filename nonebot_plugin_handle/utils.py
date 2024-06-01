@@ -109,6 +109,18 @@ def get_pinyin(idiom: str, default_pinyin: list = []) -> List[Tuple[str, str, st
         results.append((initial, final, tone))  # 声母，韵母，声调
     return results
 
+def query_word(name: str, word: str) -> str:
+    for mode in game_mode:
+        if name == game_mode[mode]['name']:
+            for ans in game_mode[mode]['answers']:
+                if word == ans['word']:
+                    return '【{}】\n拼音：{}\n所属范围：{}\n释义：{}'.format(
+                        word,
+                        ' '.join(ans.get('pinyin', [py[0] for py in pinyin(word, style=Style.TONE3, v_to_u=True)])),
+                        '、'.join(ans.get('category', [])),
+                        ans['explanation'].replace('；', '\n')
+                    )
+
 
 def save_jpg(frame: IMG) -> BytesIO:
     output = BytesIO()
