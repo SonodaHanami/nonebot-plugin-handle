@@ -34,7 +34,7 @@ game_mode = {
 }
 
 def init_answers():
-    reply = []
+    reply = ['正在初始化词库']
     for mode in game_mode:
         with game_mode[mode]['answer_path'].open("r", encoding="utf-8") as f:
             answers = json.load(f)
@@ -42,7 +42,7 @@ def init_answers():
             game_mode[mode]['word_to_pinyin'] = {}
             for answer in game_mode[mode]['answers']:
                 game_mode[mode]['word_to_pinyin'][answer['word']] = [[py] for py in answer.get("pinyin", [])]
-            reply.append('加载了 {} 个 {}'.format(len(game_mode[mode]['answers']), game_mode[mode]['name']))
+            reply.append('加载了{}个{}'.format(len(game_mode[mode]['answers']), game_mode[mode]['name']))
     return '\n'.join(reply)
 
 def legal_idiom(word: str, mode: str) -> bool:

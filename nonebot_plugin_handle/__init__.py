@@ -18,6 +18,7 @@ require("nonebot_plugin_session")
 from nonebot_plugin_alconna import (
     Alconna,
     AlconnaQuery,
+    Arparma,
     Image,
     Option,
     Query,
@@ -39,10 +40,8 @@ no_limit_groups = [
     '62195088',
 ]
 
-current_games = {}
-last_game = {}
+last_games = {}
 temp_no_limit_groups = []
-game_start = list(game_mode.keys())
 all_category_list = ['主线关卡', '主线章节', '保全派驻关卡', '傀影与猩红孤钻中的事件', '傀影与猩红孤钻中的关卡', '傀影与猩红孤钻中的收藏品', '关卡', '其他', '其他天赋', '其他技能', '刻俄柏的灰蕈迷境中的事件', '刻俄柏的灰蕈迷境中的关卡', '刻俄柏的灰蕈迷境中的收藏品', '剿灭关卡', '卡池', '周常关卡', '周常章节', '干员代号', '干员基建技能', '干员天赋', '干员技能', '干员模组', '探索者的银凇止境中的事件', '探索者的银凇止境中的关卡', '探索者的银凇止境中的收藏品', '敌人', '水月与深蓝之树中的事件', '水月与深蓝之树中的关卡', '水月与深蓝之树中的排异反应', '水月与深蓝之树中的收藏品', '活动', '活动关卡', '活动章节', '物品', '生息演算-沙中之火中的关卡', '生息演算-沙中之火中的物品', '生息演算-沙洲遗闻中的关卡', '生息演算-沙洲遗闻中的物品', '生息演算关卡', '生息演算物品', '皮肤', '章节', '装置/可部署物品名', '阵营', '集成战略事件', '集成战略关卡', '集成战略分队', '集成战略层数', '集成战略收藏品', '集成战略结局', '集成战略节点', '集成战略难度选项']
 ji_category_list = [
     '集成战略事件', '集成战略关卡', '集成战略分队', '集成战略层数', '集成战略收藏品', '集成战略结局', '集成战略节点', '集成战略难度选项',
@@ -103,14 +102,14 @@ def game_not_running(user_id: UserId) -> bool:
 
 handle = on_alconna(
     Alconna(
-        game_start,
+        list(game_mode.keys()),
         Option("--hard", default=False, action=store_true),
         Option("-s|--strict", default=False, action=store_true),
         Option("--nohint", default=False, action=store_true),
         Option("--confirm", default=False, action=store_true),
         Option("--ji", default=False, action=store_true),
     ),
-    aliases=("猜舟语",),
+    # aliases=tuple([f"猜{game_mode[mode]['name']}" for mode in game_mode]),
     rule=game_not_running,
     use_cmd_start=handle_config.handle_use_cmd_start,
     block=True,
@@ -125,7 +124,7 @@ handle_hint = on_alconna(
 )
 handle_stop = on_alconna(
     "结束",
-    aliases=("结束游戏", "结束猜成语"),
+    # aliases=("结束游戏", "结束猜成语"),
     rule=game_is_running,
     use_cmd_start=handle_config.handle_use_cmd_start,
     block=True,
@@ -155,7 +154,7 @@ async def stop_game_timeout(matcher: Matcher, user_id: str):
     game = games.get(user_id, None)
     stop_game(user_id)
     if game:
-        msg = "猜成语超时，游戏结束。"
+        msg = f"猜{game.name}超时，游戏结束。"
         if len(game.guessed_idiom) >= 1:
             msg += f"\n{game.result}"
         await matcher.finish(msg)
@@ -175,6 +174,7 @@ def set_timeout(matcher: Matcher, user_id: str, timeout: float = 300):
 @handle.handle()
 async def _(
     matcher: Matcher,
+    arp: Arparma,
     user_id: UserId,
     hard: Query[bool] = AlconnaQuery("hard.value", False),
     strict: Query[bool] = AlconnaQuery("strict.value", False),
@@ -182,11 +182,12 @@ async def _(
     confirm: Query[bool] = AlconnaQuery("confirm.value", False),
     ji: Query[bool] = AlconnaQuery("ji.value", False),
 ):
+    game_name = arp.header_match.result
     is_hard = hard.result
     is_strict = is_hard or handle_config.handle_strict_mode or strict.result
     is_nohint = is_hard or nohint.result
     is_confirm = confirm.result
-    mode, idiom, explanation, category, selected_category = random_idiom('arkdle', custom_category=ji_category_list if ji.result else [])
+    mode, idiom, explanation, category, selected_category = random_idiom(game_name, custom_category=ji_category_list if ji.result else [])
     game = Handle(mode, idiom, explanation, category, selected_category)
 
     games[user_id] = game
