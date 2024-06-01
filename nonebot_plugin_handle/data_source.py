@@ -48,7 +48,6 @@ class Handle:
     def __init__(self,
             mode: str, idiom: str, explanation: str,
             category: List = [], selected_category: List = [],
-            strict: bool = False, confirm: bool = False
         ):
         self.mode = mode
         self.name = game_mode[mode]['name']
@@ -57,8 +56,8 @@ class Handle:
         self.category = category
         self.selected_category = selected_category
         self.word_to_pinyin = game_mode[mode]['word_to_pinyin']
-        self.strict: bool = strict  # 是否判断输入词语为成语
-        self.confirm: bool = confirm # 是否提示输入不为成语
+        self.strict: bool = False  # 是否判断输入词语为成语
+        self.confirm: bool = False # 是否提示输入不为成语
         self.result = '【{}】\n{}'.format(idiom, explanation.replace('；', '\n'))
         self.pinyin: List[Tuple[str, str, str]] = get_pinyin(idiom, default_pinyin=self.word_to_pinyin.get(idiom))  # 拼音
         self.length = 4

@@ -104,6 +104,7 @@ def game_not_running(user_id: UserId) -> bool:
 handle = on_alconna(
     Alconna(
         game_start,
+        Option("--hard", default=False, action=store_true),
         Option("-s|--strict", default=False, action=store_true),
         Option("--nohint", default=False, action=store_true),
         Option("--confirm", default=False, action=store_true),
@@ -175,25 +176,26 @@ def set_timeout(matcher: Matcher, user_id: str, timeout: float = 300):
 async def _(
     matcher: Matcher,
     user_id: UserId,
+    hard: Query[bool] = AlconnaQuery("hard.value", False),
     strict: Query[bool] = AlconnaQuery("strict.value", False),
     nohint: Query[bool] = AlconnaQuery("nohint.value", False),
     confirm: Query[bool] = AlconnaQuery("confirm.value", False),
     ji: Query[bool] = AlconnaQuery("ji.value", False),
 ):
-    is_strict = handle_config.handle_strict_mode or strict.result
-    is_nohint = nohint.result
+    is_hard = hard.result
+    is_strict = is_hard or handle_config.handle_strict_mode or strict.result
+    is_nohint = is_hard or nohint.result
     is_confirm = confirm.result
     mode, idiom, explanation, category, selected_category = random_idiom('arkdle', custom_category=ji_category_list if ji.result else [])
-    game = Handle(
-        mode, idiom, explanation, category, selected_category,
-        strict=is_strict,
-        confirm=is_confirm,
-    )
+    game = Handle(mode, idiom, explanation, category, selected_category)
 
     games[user_id] = game
     set_timeout(matcher, user_id)
 
     extra_info = ''
+    if is_hard:
+        game.times = 5
+        extra_info += '\n本局已启用困难模式，可猜次数变为5，自动禁用提示，自动启用严格模式'
     if is_nohint:
         game.hint_enabled = False
         extra_info += '\n本局已禁用提示'
@@ -258,7 +260,7 @@ async def _(matcher: Matcher, user_id: UserId, matched: Dict[str, Any] = RegexDi
         stop_game(user_id)
         msg = Text(
             (
-                f"恭喜你猜出了{game.name}！({len(game.guessed_idiom)}/10)"
+                f"恭喜你猜出了{game.name}！({len(game.guessed_idiom)}/{game.times})"
                 if result == GuessResult.WIN
                 else "很遗憾，没有人猜出来呢"
             )
@@ -273,9 +275,10 @@ async def _(matcher: Matcher, user_id: UserId, matched: Dict[str, Any] = RegexDi
         if game.confirm:
             await matcher.finish(f"你确定这是个{game.name}吗？", reply_message=True)
     else:
-        msg = Text('正在猜{}({}/10)\n范围：{}'.format(
+        msg = Text('正在猜{}({}/{})\n范围：{}'.format(
             game.name,
             len(game.guessed_idiom),
+            game.times,
             '、'.join(game.selected_category) or '全部'
         )) + Image(raw=await run_sync(game.draw)())
         await msg.send()

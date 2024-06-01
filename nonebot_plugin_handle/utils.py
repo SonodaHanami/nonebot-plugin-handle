@@ -75,7 +75,7 @@ def random_idiom(mode, custom_category: List = []) -> Tuple[str, str, str, list,
 INITIALS = [
     "zh", "z", "y", "x", "w", "t", "sh", "s", "r", "q", "p",
     "n", "m", "l", "k", "j", "h", "g", "f", "d", "ch", "c", "b"
-]
+    ]
 # 韵母
 FINALS = [
     "ün", "üe", "üan", "ü", "uo", "un", "ui", "ue", "uang",
