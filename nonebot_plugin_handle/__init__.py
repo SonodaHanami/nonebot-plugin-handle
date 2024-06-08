@@ -227,7 +227,9 @@ async def _(matcher: Matcher, user_id: UserId):
         await matcher.finish('提示冷却中，距离下一次使用提示还需猜{}次'.format(3 - len(game.guessed_idiom) + game.last_hint))
     else:
         game.last_hint = len(game.guessed_idiom)
-        msg = UniMessage(raw=await run_sync(game.draw_hint)())
+        msg = Text('这是提示，距离下一次使用提示还需猜{}次'.format(
+            3 - len(game.guessed_idiom) + game.last_hint
+        )) + Image(raw=await run_sync(game.draw_hint)())
         await msg.send()
 
 @handle_stop.handle()

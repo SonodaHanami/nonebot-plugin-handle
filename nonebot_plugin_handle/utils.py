@@ -25,7 +25,8 @@ game_mode = {
     },
     'arkdle': {
         'name': '舟语',
-        'answer_path': data_dir / "answers_arknights.json"
+        'answer_path': data_dir / "answers_arknights.json",
+        'pinyin_path': data_dir / "pinyin_arknights.json",
     },
     'dordle': {
         'name': '刀语',
@@ -39,10 +40,14 @@ def init_answers():
         with game_mode[mode]['answer_path'].open("r", encoding="utf-8") as f:
             answers = json.load(f)
             game_mode[mode]['answers'] = answers
-            game_mode[mode]['word_to_pinyin'] = {}
-            for answer in game_mode[mode]['answers']:
-                game_mode[mode]['word_to_pinyin'][answer['word']] = [[py] for py in answer.get("pinyin", [])]
-            reply.append('加载了{}个{}'.format(len(game_mode[mode]['answers']), game_mode[mode]['name']))
+        word_to_pinyin = {}
+        if game_mode[mode].get('pinyin_path'):
+            with game_mode[mode]['pinyin_path'].open("r", encoding="utf-8") as f:
+                word_to_pinyin = json.load(f)
+        game_mode[mode]['word_to_pinyin'] = {}
+        for answer in game_mode[mode]['answers']:
+            game_mode[mode]['word_to_pinyin'][answer['word']] = [[py] for py in word_to_pinyin.get(answer['word'], [])]
+        reply.append('加载了{}个{}'.format(len(game_mode[mode]['answers']), game_mode[mode]['name']))
     return '\n'.join(reply)
 
 def legal_idiom(word: str, mode: str) -> bool:
