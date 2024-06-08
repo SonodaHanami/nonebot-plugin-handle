@@ -40,6 +40,12 @@ def init_answers():
         with game_mode[mode]['answer_path'].open("r", encoding="utf-8") as f:
             answers = json.load(f)
             game_mode[mode]['answers'] = answers
+
+        if isinstance(game_mode[mode]['explanation'], list):
+            game_mode[mode]['explanation'] = '\n'.join(game_mode[mode]['explanation'])
+        if isinstance(game_mode[mode]['explanation'], str):
+            game_mode[mode]['explanation'] = game_mode[mode]['explanation'].replace('；', '\n')
+
         word_to_pinyin = {}
         if game_mode[mode].get('pinyin_path'):
             with game_mode[mode]['pinyin_path'].open("r", encoding="utf-8") as f:
@@ -123,7 +129,7 @@ def query_word(name: str, word: str) -> str:
                         word,
                         ' '.join(ans.get('pinyin', [py[0] for py in pinyin(word, style=Style.TONE3, v_to_u=True)])),
                         '、'.join(ans.get('category', [])),
-                        ans['explanation'].replace('；', '\n')
+                        ans['explanation']
                     )
 
 
